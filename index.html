@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>🎯 Arremesso com inércia | Duplo clique abre meta</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: radial-gradient(circle at 10% 20%, #0b1120, #030712);
+      min-height: 100vh;
+      height: 100vh;
+      overflow: hidden;
+      color: #eef2ff;
+      position: relative;
+      cursor: default;
+    }
+
+    .hero {
+      text-align: center;
+      padding: 1rem 1rem 0.5rem;
+      pointer-events: none;
+    }
+
+    .hero h1 {
+      font-size: 1.8rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #e9c46a, #f4a261, #e76f51);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      letter-spacing: -0.5px;
+    }
+
+    .hero p {
+      font-size: 0.8rem;
+      color: #94a3b8;
+      margin-top: 0.3rem;
+    }
+
+    .emoji-wrapper {
+      position: fixed;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: default;
+      z-index: 999;
+    }
+
+    .floating-emoji {
+      width: 100px;
+      height: 100px;
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(12px);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 4rem;
+      cursor: pointer;
+      transition: box-shadow 0.2s, transform 0.05s ease;
+      z-index: 999;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.4);
+      border: 2px solid rgba(244, 162, 97, 0.6);
+      user-select: none;
+      touch-action: none;
+      will-change: left, top;
+    }
+
+    .floating-emoji:active {
+      transform: scale(0.97);
+    }
+
+    .floating-emoji:hover {
+      box-shadow: 0 0 22px rgba(244, 162, 97, 0.7);
+      border-color: #f4a261;
+      background: rgba(244, 162, 97, 0.25);
+    }
+
+    .speech-bubble {
+      position: relative;
+      background: #1e293b;
+      border-radius: 1.5rem;
+      padding: 0.6rem 1rem;
+      margin-bottom: 0.8rem;
+      max-width: 180px;
+      text-align: center;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #facc15;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1px solid rgba(244, 162, 97, 0.4);
+      backdrop-filter: blur(4px);
+      word-wrap: break-word;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .speech-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 10px 8px 0 8px;
+      border-style: solid;
+      border-color: #1e293b transparent transparent transparent;
+    }
+
+    .speech-bubble:hover {
+      background: #2d3a5e;
+      border-color: #f4a261;
+      transform: scale(1.02);
+    }
+
+    @media (max-width: 640px) {
+      .floating-emoji {
+        width: 70px;
+        height: 70px;
+        font-size: 2.8rem;
+      }
+      .speech-bubble {
+        max-width: 140px;
+        font-size: 0.65rem;
+        padding: 0.4rem 0.8rem;
+      }
+      .hero h1 {
+        font-size: 1.3rem;
+      }
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(12px);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .modal-content {
+      background: #0f172ae6;
+      border-radius: 2rem;
+      width: 90%;
+      max-width: 700px;
+      padding: 2rem 1.5rem;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.2);
+      box-shadow: 0 25px 45px rgba(0,0,0,0.5);
+      position: relative;
+    }
+
+    .close-modal {
+      position: absolute;
+      top: 1rem;
+      right: 1.5rem;
+      font-size: 2rem;
+      cursor: pointer;
+      color: #94a3b8;
+      transition: 0.2s;
+    }
+
+    .close-modal:hover {
+      color: #f4a261;
+    }
+
+    .modal-icon {
+      font-size: 4rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .modal-title {
+      font-size: 1.8rem;
+      font-weight: 800;
+      margin-bottom: 0.3rem;
+    }
+
+    .modal-sub {
+      font-size: 0.85rem;
+      color: #cbd5e1;
+      margin-bottom: 1.5rem;
+    }
+
+    .custom-timer {
+      background: #02061780;
+      border-radius: 1.5rem;
+      padding: 1.2rem 1rem;
+      margin: 1rem 0;
+      border: 1px solid #f4a26140;
+    }
+
+    .timer-digits {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.6rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .timer-block {
+      background: #00000050;
+      border-radius: 1rem;
+      padding: 0.4rem 0.5rem;
+      min-width: 60px;
+      text-align: center;
+    }
+
+    .timer-number {
+      font-size: 1.5rem;
+      font-weight: 800;
+      font-family: monospace;
+      background: linear-gradient(to bottom, #fff, #facc15);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      line-height: 1;
+    }
+
+    .timer-label {
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: #9ca3af;
+      margin-top: 3px;
+    }
+
+    .total-years {
+      font-size: 0.8rem;
+      background: #f4a26120;
+      display: inline-block;
+      padding: 0.2rem 0.8rem;
+      border-radius: 2rem;
+      margin-top: 0.5rem;
+      color: #fcd34d;
+    }
+
+    .message-area {
+      font-size: 0.85rem;
+      margin: 0.8rem 0;
+      font-weight: 500;
+    }
+
+    .reason-modal {
+      background: #1e293b;
+    }
+
+    .reason-text {
+      font-size: 1rem;
+      line-height: 1.5;
+      margin: 1rem 0;
+      color: #e2e8f0;
+      text-align: left;
+    }
+
+    footer {
+      position: fixed;
+      bottom: 8px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 0.65rem;
+      color: #4b5563;
+      background: transparent;
+      padding: 0.3rem;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="hero">
+  <h1> MEUS OBJETIVOS !!</h1>
+  <p>Segure e arraste o emoji para se divertir e clique para descobrir meus objetivos!</p>
+</div>
+
+<div id="wrapper-carro" class="emoji-wrapper" style="top: 50%; left: calc(50% - 220px); transform: translateY(-50%);">
+  <div class="speech-bubble" data-bubble="carro">💭 Por que 3 anos?</div>
+  <div class="floating-emoji" data-goal-id="carro">🚗</div>
+</div>
+
+<div id="wrapper-trabalho" class="emoji-wrapper" style="top: 50%; left: calc(50% - 70px); transform: translateY(-50%);">
+  <div class="speech-bubble" data-bubble="trabalho">💭 Por que 1 ano?</div>
+  <div class="floating-emoji" data-goal-id="trabalho">💼</div>
+</div>
+
+<div id="wrapper-pc" class="emoji-wrapper" style="top: 50%; left: calc(50% + 80px); transform: translateY(-50%);">
+  <div class="speech-bubble" data-bubble="pc">💭 Por que 2 anos?</div>
+  <div class="floating-emoji" data-goal-id="pc">🖥️</div>
+</div>
+
+<div id="wrapper-quarto" class="emoji-wrapper" style="top: 50%; left: calc(50% + 230px); transform: translateY(-50%);">
+  <div class="speech-bubble" data-bubble="quarto">💭 Por que 4 anos?</div>
+  <div class="floating-emoji" data-goal-id="quarto">🛏️</div>
+</div>
+
+<div id="goalModal" class="modal">
+  <div class="modal-content" id="modalDynamic">
+    <span class="close-modal">&times;</span>
+    <div id="modalInner"></div>
+  </div>
+</div>
+
+<div id="reasonModal" class="modal">
+  <div class="modal-content reason-modal" id="reasonModalContent">
+    <span class="close-modal" id="closeReasonModal">&times;</span>
+    <div id="reasonInner"></div>
+  </div>
+</div>
+
+<footer>
+  📅 Datas: Trabalho (31/12/2027) | PC (31/12/2028) | Carro (31/12/2029) | Quarto (31/12/2030)
+</footer>
+
+<script>
+  (function() {
+    const goalsConfig = {
+      carro: {
+        nome: "Comprar um carro",
+        anoAlvo: 2029,
+        icone: "🚗💨",
+        corPrimaria: "#e76f51",
+        corSec: "#f4a261",
+        fraseMotivacional: "Cada quilômetro conta! Foco no volante do futuro.",
+        bgGradient: "linear-gradient(145deg, #2c1a12, #1a0f0a)",
+        razao: "🚗 Ter um carro próprio representa liberdade e praticidade. Escolhi 3 anos porque é o tempo necessário para juntar uma entrada boa, pesquisar bem o modelo ideal e fazer uma compra consciente sem comprometer o orçamento. Quero poder viajar com a família, ir ao trabalho com conforto e ter segurança nos deslocamentos diários."
+      },
+      trabalho: {
+        nome: "Arrumar um trabalho",
+        anoAlvo: 2027,
+        icone: "💼✨",
+        corPrimaria: "#f4d03f",
+        corSec: "#f7dc6f",
+        fraseMotivacional: "Networking, estudo e atitude. Sua vaga está te esperando!",
+        bgGradient: "linear-gradient(145deg, #1f2a13, #0e1708)",
+        razao: "💼 A estabilidade financeira e o crescimento profissional são prioridades na minha vida. Defini 1 ano como prazo porque é tempo suficiente para me qualificar através de cursos, atualizar meu currículo e portfólio, fazer networking e conseguir uma colocação sólida em uma área que eu realmente goste. Quero realizar meus sonhos com dignidade e independência."
+      },
+      pc: {
+        nome: "Arrumar meu PC",
+        anoAlvo: 2028,
+        icone: "🖥️⚡",
+        corPrimaria: "#9b59b6",
+        corSec: "#af7ac5",
+        fraseMotivacional: "Peça por peça, performance total. Seu setup vai voar!",
+        bgGradient: "linear-gradient(145deg, #1e142c, #100a1a)",
+        razao: "🖥️ Meu computador atual está lento e compromete meus estudos, trabalhos freelancer e momentos de lazer. Em 2 anos consigo pesquisar as melhores peças, esperar promoções, juntar dinheiro aos poucos e montar uma máquina potente que vai durar muitos anos. Quero um setup que me permita programar, editar vídeos e jogar sem travamentos."
+      },
+      quarto: {
+        nome: "Reformar meu quarto",
+        anoAlvo: 2030,
+        icone: "🛏️🎨",
+        corPrimaria: "#2ecc71",
+        corSec: "#58d68d",
+        fraseMotivacional: "Seu refúgio, seu estilo. Projete o ambiente perfeito.",
+        bgGradient: "linear-gradient(145deg, #0e2b1f, #07150e)",
+        razao: "🛏️ Meu quarto é meu refúgio, onde passo boa parte do tempo. Quero um ambiente funcional, iluminação adequada, móveis planejados e decoração que reflita minha personalidade. 4 anos é o prazo ideal para planejar cada detalhe, pesquisar materiais, economizar sem pressa e transformar o espaço em algo que me traga paz e inspiração diariamente."
+      }
+    };
+
+    let activeTimerInterval = null;
+    let currentTargetDate = null;
+    const modal = document.getElementById("goalModal");
+    const modalInner = document.getElementById("modalInner");
+    const closeBtn = document.querySelector("#goalModal .close-modal");
+    const reasonModalEl = document.getElementById("reasonModal");
+    const reasonInner = document.getElementById("reasonInner");
+    const closeReasonBtn = document.getElementById("closeReasonModal");
+
+    function getTargetDateDec31(year) {
+      return new Date(year, 11, 31, 23, 59, 59, 999);
+    }
+
+    function formatTwoDigits(n) {
+      return n < 10 ? '0' + n : n;
+    }
+
+    function getTimeComponents(targetDate, currentDate) {
+      const diffMs = targetDate - currentDate;
+      if (diffMs <= 0) {
+        return { years: 0, months: 0, days: 0, hours: 0, minutes: 0, seconds: 0, expired: true };
+      }
+      const totalSeconds = Math.floor(diffMs / 1000);
+      const totalMinutes = Math.floor(totalSeconds / 60);
+      const totalHours = Math.floor(totalMinutes / 60);
+      const totalDays = Math.floor(totalHours / 24);
+      const seconds = totalSeconds % 60;
+      const minutes = totalMinutes % 60;
+      const hours = totalHours % 24;
+      let years = Math.floor(totalDays / 365.25);
+      let remainingDays = totalDays - Math.floor(years * 365.25);
+      let months = Math.floor(remainingDays / 30.44);
+      let days = Math.floor(remainingDays - months * 30.44);
+      if (months >= 12) {
+        years += Math.floor(months / 12);
+        months = months % 12;
+      }
+      if (days < 0) days = 0;
+      if (months < 0) months = 0;
+      if (years < 0) years = 0;
+      return { years, months, days, hours, minutes, seconds, expired: false };
+    }
+
+    function updateTimerDisplay(targetDate, containerElement) {
+      if (!targetDate || !containerElement) return;
+      const agora = new Date();
+      const components = getTimeComponents(targetDate, agora);
+      const timerNumbersDiv = containerElement.querySelector('.timer-numbers');
+      if (!timerNumbersDiv) return;
+
+      if (components.expired) {
+        timerNumbersDiv.innerHTML = `
+          <div class="timer-block"><div class="timer-number">0</div><div class="timer-label">ANOS</div></div>
+          <div class="timer-block"><div class="timer-number">0</div><div class="timer-label">MESES</div></div>
+          <div class="timer-block"><div class="timer-number">0</div><div class="timer-label">DIAS</div></div>
+          <div class="timer-block"><div class="timer-number">00</div><div class="timer-label">HORAS</div></div>
+          <div class="timer-block"><div class="timer-number">00</div><div class="timer-label">MIN</div></div>
+          <div class="timer-block"><div class="timer-number">00</div><div class="timer-label">SEG</div></div>
+        `;
+        const yearsSpan = containerElement.querySelector('.total-years');
+        if (yearsSpan) yearsSpan.innerText = `🎉 Prazo atingido! Meta concluída! 🎉`;
+        const msgEl = containerElement.querySelector('.dynamic-message');
+        if (msgEl) msgEl.innerText = "✅ OBJETIVO REALIZADO! Parabéns!";
+        return;
+      }
+
+      timerNumbersDiv.innerHTML = `
+        <div class="timer-block"><div class="timer-number">${components.years}</div><div class="timer-label">ANOS</div></div>
+        <div class="timer-block"><div class="timer-number">${components.months}</div><div class="timer-label">MESES</div></div>
+        <div class="timer-block"><div class="timer-number">${components.days}</div><div class="timer-label">DIAS</div></div>
+        <div class="timer-block"><div class="timer-number">${formatTwoDigits(components.hours)}</div><div class="timer-label">HORAS</div></div>
+        <div class="timer-block"><div class="timer-number">${formatTwoDigits(components.minutes)}</div><div class="timer-label">MIN</div></div>
+        <div class="timer-block"><div class="timer-number">${formatTwoDigits(components.seconds)}</div><div class="timer-label">SEG</div></div>
+      `;
+      const totalDaysLeft = Math.floor((targetDate - agora) / (1000 * 3600 * 24));
+      const yearsSpan = containerElement.querySelector('.total-years');
+      if (yearsSpan) {
+        if (totalDaysLeft > 0) {
+          yearsSpan.innerText = `📅 ${totalDaysLeft} dias restantes · mantenha o foco!`;
+        } else {
+          yearsSpan.innerText = `⏳ Último dia!`;
+        }
+      }
+      const msgEl = containerElement.querySelector('.dynamic-message');
+      if (msgEl) {
+        if (totalDaysLeft <= 30 && totalDaysLeft > 0) msgEl.innerText = "⚡ ULTIMOS DIAS! Hora de acelerar!";
+        else if (totalDaysLeft <= 90) msgEl.innerText = "🔥 Prazo chegando, foco máximo!";
+        else msgEl.innerText = "🚀 Continue firme, um dia de cada vez.";
+      }
+    }
+
+    function openGoalModal(goalId) {
+      const config = goalsConfig[goalId];
+      if (!config) return;
+
+      if (activeTimerInterval) {
+        clearInterval(activeTimerInterval);
+        activeTimerInterval = null;
+      }
+
+      const targetDate = getTargetDateDec31(config.anoAlvo);
+      currentTargetDate = targetDate;
+      const anoFormatado = config.anoAlvo;
+      const uniqueId = `timer_${goalId}`;
+      const modalHTML = `
+        <div style="background: ${config.bgGradient}; border-radius: 1.8rem; padding: 0.3rem;">
+          <div style="text-align: center;">
+            <div class="modal-icon">${config.icone}</div>
+            <div class="modal-title" style="color: ${config.corSec};">${config.nome}</div>
+            <div class="modal-sub">📅 Data limite: 31 de dezembro de ${anoFormatado} (23:59)</div>
+          </div>
+          <div class="custom-timer" id="${uniqueId}_container">
+            <div class="timer-digits timer-numbers">
+              <div class="timer-block"><div class="timer-number">--</div><div class="timer-label">ANOS</div></div>
+              <div class="timer-block"><div class="timer-number">--</div><div class="timer-label">MESES</div></div>
+              <div class="timer-block"><div class="timer-number">--</div><div class="timer-label">DIAS</div></div>
+              <div class="timer-block"><div class="timer-number">--</div><div class="timer-label">HORAS</div></div>
+              <div class="timer-block"><div class="timer-number">--</div><div class="timer-label">MIN</div></div>
+              <div class="timer-block"><div class="timer-number">--</div><div class="timer-label">SEG</div></div>
+            </div>
+            <div class="total-years">📆 Contagem regressiva até 31/12/${anoFormatado}...</div>
+          </div>
+          <div class="message-area dynamic-message" style="color: ${config.corPrimaria};">✨ ${config.fraseMotivacional}</div>
+          <button id="closeModalBtn" style="background: ${config.corPrimaria}; border: none; padding: 0.5rem 1.5rem; border-radius: 2rem; font-weight: bold; color: #0f172a; margin-top: 0.8rem; cursor: pointer;">Fechar</button>
+        </div>
+      `;
+      modalInner.innerHTML = modalHTML;
+      const timerContainer = document.getElementById(`${uniqueId}_container`);
+      const updateCurrentTimer = () => {
+        if (!currentTargetDate) return;
+        updateTimerDisplay(currentTargetDate, timerContainer);
+      };
+      updateCurrentTimer();
+      activeTimerInterval = setInterval(() => {
+        if (modal.style.display === 'flex' && currentTargetDate) {
+          updateCurrentTimer();
+        } else {
+          if (activeTimerInterval && modal.style.display !== 'flex') {
+            clearInterval(activeTimerInterval);
+            activeTimerInterval = null;
+          }
+        }
+      }, 1000);
+      modal.style.display = 'flex';
+      const dynamicCloseBtn = document.getElementById('closeModalBtn');
+      if (dynamicCloseBtn) {
+        dynamicCloseBtn.onclick = () => {
+          closeModalAndClean();
+        };
+      }
+    }
+
+    function openReasonModal(bubbleId) {
+      let config = null;
+      if (bubbleId === 'carro') config = goalsConfig.carro;
+      else if (bubbleId === 'trabalho') config = goalsConfig.trabalho;
+      else if (bubbleId === 'pc') config = goalsConfig.pc;
+      else if (bubbleId === 'quarto') config = goalsConfig.quarto;
+      if (!config) return;
+
+      const anosTexto = config.anoAlvo === 2027 ? "1 ano" : config.anoAlvo === 2028 ? "2 anos" : config.anoAlvo === 2029 ? "3 anos" : "4 anos";
+      const reasonHTML = `
+        <div style="text-align: center;">
+          <div style="font-size: 3rem; margin-bottom: 0.5rem;">${config.icone}</div>
+          <h2 style="color: ${config.corSec}; margin-bottom: 1rem;">Por que ${anosTexto}?</h2>
+          <div class="reason-text">${config.razao}</div>
+          <button id="closeReasonBtn" style="background: ${config.corPrimaria}; border: none; padding: 0.5rem 1.5rem; border-radius: 2rem; font-weight: bold; color: #0f172a; margin-top: 0.5rem; cursor: pointer;">Entendi 💪</button>
+        </div>
+      `;
+      reasonInner.innerHTML = reasonHTML;
+      reasonModalEl.style.display = 'flex';
+      const closeReasonBtnInner = document.getElementById('closeReasonBtn');
+      if (closeReasonBtnInner) {
+        closeReasonBtnInner.onclick = () => {
+          reasonModalEl.style.display = 'none';
+        };
+      }
+    }
+
+    function closeModalAndClean() {
+      modal.style.display = 'none';
+      if (activeTimerInterval) {
+        clearInterval(activeTimerInterval);
+        activeTimerInterval = null;
+      }
+      currentTargetDate = null;
+    }
+
+    function makeWrapperDraggableWithThrow(wrapper) {
+      let startX = 0, startY = 0;
+      let initialLeft = 0, initialTop = 0;
+      let isDragging = false;
+      let dragStarted = false;
+      let lastMoveTime = 0;
+      let lastMoveX = 0, lastMoveY = 0;
+      let velocityX = 0, velocityY = 0;
+      let inertiaAnimFrame = null;
+      const clickThreshold = 5;
+      let clickStartX = 0, clickStartY = 0;
+      
+      let clickTimer = null;
+      let clickCount = 0;
+
+      function resetClickCount() {
+        clickCount = 0;
+        if (clickTimer) clearTimeout(clickTimer);
+        clickTimer = null;
+      }
+
+      function onMouseDown(e) {
+        if (e.button !== 0) return;
+        e.preventDefault();
+        if (inertiaAnimFrame) cancelAnimationFrame(inertiaAnimFrame);
+        
+        const rect = wrapper.getBoundingClientRect();
+        initialLeft = rect.left;
+        initialTop = rect.top;
+        
+        wrapper.style.position = 'fixed';
+        wrapper.style.left = initialLeft + 'px';
+        wrapper.style.top = initialTop + 'px';
+        wrapper.style.transform = 'none';
+        
+        startX = e.clientX;
+        startY = e.clientY;
+        clickStartX = e.clientX;
+        clickStartY = e.clientY;
+        dragStarted = false;
+        isDragging = true;
+        velocityX = 0;
+        velocityY = 0;
+        lastMoveTime = performance.now();
+        lastMoveX = startX;
+        lastMoveY = startY;
+        
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+      }
+
+      function onMouseMove(e) {
+        if (!isDragging) return;
+        e.preventDefault();
+        const moveDistance = Math.hypot(e.clientX - clickStartX, e.clientY - clickStartY);
+        if (moveDistance > clickThreshold) {
+          dragStarted = true;
+          resetClickCount();
+        }
+        if (!dragStarted) return;
+        
+        const now = performance.now();
+        const dt = Math.min(100, now - lastMoveTime);
+        if (dt > 0) {
+          const instantVX = (e.clientX - lastMoveX) / dt;
+          const instantVY = (e.clientY - lastMoveY) / dt;
+          velocityX = velocityX * 0.6 + instantVX * 0.4;
+          velocityY = velocityY * 0.6 + instantVY * 0.4;
+        }
+        lastMoveTime = now;
+        lastMoveX = e.clientX;
+        lastMoveY = e.clientY;
+        
+        let newLeft = initialLeft + (e.clientX - startX);
+        let newTop = initialTop + (e.clientY - startY);
+        const maxX = window.innerWidth - wrapper.offsetWidth;
+        const maxY = window.innerHeight - wrapper.offsetHeight;
+        newLeft = Math.min(Math.max(newLeft, 0), maxX);
+        newTop = Math.min(Math.max(newTop, 0), maxY);
+        
+        wrapper.style.left = newLeft + 'px';
+        wrapper.style.top = newTop + 'px';
+        initialLeft = newLeft;
+        initialTop = newTop;
+        startX = e.clientX;
+        startY = e.clientY;
+      }
+
+      function onMouseUp(e) {
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+        if (!isDragging) return;
+        
+        if (dragStarted) {
+          startInertia();
+        }
+        isDragging = false;
+        dragStarted = false;
+      }
+
+      function startInertia() {
+        if (Math.abs(velocityX) < 0.05 && Math.abs(velocityY) < 0.05) return;
+        let friction = 0.95;
+        let minVelocity = 0.08;
+        let currentVelX = velocityX;
+        let currentVelY = velocityY;
+        let left = parseFloat(wrapper.style.left);
+        let top = parseFloat(wrapper.style.top);
+        let lastTimestamp = performance.now();
+        
+        function step(now) {
+          const dt = Math.min(32, now - lastTimestamp);
+          if (dt < 1) {
+            inertiaAnimFrame = requestAnimationFrame(step);
+            return;
+          }
+          currentVelX = currentVelX * Math.pow(friction, dt / 16);
+          currentVelY = currentVelY * Math.pow(friction, dt / 16);
+          const frameShiftX = currentVelX * dt;
+          const frameShiftY = currentVelY * dt;
+          let newLeft = left + frameShiftX;
+          let newTop = top + frameShiftY;
+          const maxX = window.innerWidth - wrapper.offsetWidth;
+          const maxY = window.innerHeight - wrapper.offsetHeight;
+          let bounced = false;
+          if (newLeft < 0) {
+            newLeft = 0;
+            currentVelX = -currentVelX * 0.5;
+            bounced = true;
+          } else if (newLeft > maxX) {
+            newLeft = maxX;
+            currentVelX = -currentVelX * 0.5;
+            bounced = true;
+          }
+          if (newTop < 0) {
+            newTop = 0;
+            currentVelY = -currentVelY * 0.5;
+            bounced = true;
+          } else if (newTop > maxY) {
+            newTop = maxY;
+            currentVelY = -currentVelY * 0.5;
+            bounced = true;
+          }
+          wrapper.style.left = newLeft + 'px';
+          wrapper.style.top = newTop + 'px';
+          left = newLeft;
+          top = newTop;
+          lastTimestamp = now;
+          if ((Math.abs(currentVelX) < minVelocity && Math.abs(currentVelY) < minVelocity) || (bounced && Math.abs(currentVelX) < 0.3 && Math.abs(currentVelY) < 0.3)) {
+            cancelAnimationFrame(inertiaAnimFrame);
+            inertiaAnimFrame = null;
+            return;
+          }
+          inertiaAnimFrame = requestAnimationFrame(step);
+        }
+        lastTimestamp = performance.now();
+        inertiaAnimFrame = requestAnimationFrame(step);
+      }
+
+      function onTouchStart(e) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        if (inertiaAnimFrame) cancelAnimationFrame(inertiaAnimFrame);
+        
+        const rect = wrapper.getBoundingClientRect();
+        initialLeft = rect.left;
+        initialTop = rect.top;
+        
+        wrapper.style.position = 'fixed';
+        wrapper.style.left = initialLeft + 'px';
+        wrapper.style.top = initialTop + 'px';
+        wrapper.style.transform = 'none';
+        
+        startX = touch.clientX;
+        startY = touch.clientY;
+        clickStartX = touch.clientX;
+        clickStartY = touch.clientY;
+        dragStarted = false;
+        isDragging = true;
+        velocityX = 0;
+        velocityY = 0;
+        lastMoveTime = performance.now();
+        lastMoveX = startX;
+        lastMoveY = startY;
+        
+        document.addEventListener('touchmove', onTouchMove, { passive: false });
+        document.addEventListener('touchend', onTouchEnd);
+      }
+
+      function onTouchMove(e) {
+        if (!isDragging) return;
+        e.preventDefault();
+        const touch = e.touches[0];
+        const moveDistance = Math.hypot(touch.clientX - clickStartX, touch.clientY - clickStartY);
+        if (moveDistance > clickThreshold) {
+          dragStarted = true;
+          resetClickCount();
+        }
+        if (!dragStarted) return;
+        
+        const now = performance.now();
+        const dt = Math.min(100, now - lastMoveTime);
+        if (dt > 0) {
+          const instantVX = (touch.clientX - lastMoveX) / dt;
+          const instantVY = (touch.clientY - lastMoveY) / dt;
+          velocityX = velocityX * 0.6 + instantVX * 0.4;
+          velocityY = velocityY * 0.6 + instantVY * 0.4;
+        }
+        lastMoveTime = now;
+        lastMoveX = touch.clientX;
+        lastMoveY = touch.clientY;
+        
+        let newLeft = initialLeft + (touch.clientX - startX);
+        let newTop = initialTop + (touch.clientY - startY);
+        const maxX = window.innerWidth - wrapper.offsetWidth;
+        const maxY = window.innerHeight - wrapper.offsetHeight;
+        newLeft = Math.min(Math.max(newLeft, 0), maxX);
+        newTop = Math.min(Math.max(newTop, 0), maxY);
+        
+        wrapper.style.left = newLeft + 'px';
+        wrapper.style.top = newTop + 'px';
+        initialLeft = newLeft;
+        initialTop = newTop;
+        startX = touch.clientX;
+        startY = touch.clientY;
+      }
+
+      function onTouchEnd(e) {
+        document.removeEventListener('touchmove', onTouchMove);
+        document.removeEventListener('touchend', onTouchEnd);
+        if (!isDragging) return;
+        
+        if (dragStarted) {
+          startInertia();
+        }
+        isDragging = false;
+        dragStarted = false;
+      }
+
+      function handleClick(target, type, id) {
+        if (dragStarted) {
+          return;
+        }
+        
+        clickCount++;
+        
+        if (clickTimer) clearTimeout(clickTimer);
+        
+        if (clickCount === 2) {
+          if (type === 'emoji') openGoalModal(id);
+          else if (type === 'bubble') openReasonModal(id);
+          resetClickCount();
+        } else {
+          clickTimer = setTimeout(() => {
+            resetClickCount();
+          }, 250);
+        }
+      }
+
+      const emoji = wrapper.querySelector('.floating-emoji');
+      const bubble = wrapper.querySelector('.speech-bubble');
+      
+      if (emoji) {
+        emoji.addEventListener('click', (e) => {
+          e.stopPropagation();
+          handleClick(e.target, 'emoji', emoji.getAttribute('data-goal-id'));
+        });
+      }
+      
+      if (bubble) {
+        bubble.addEventListener('click', (e) => {
+          e.stopPropagation();
+          handleClick(e.target, 'bubble', bubble.getAttribute('data-bubble'));
+        });
+      }
+
+      wrapper.addEventListener('mousedown', onMouseDown);
+      wrapper.addEventListener('touchstart', onTouchStart, { passive: false });
+    }
+
+    function attachEvents() {
+      const wrappers = document.querySelectorAll('.emoji-wrapper');
+      wrappers.forEach(wrapper => {
+        makeWrapperDraggableWithThrow(wrapper);
+      });
+
+      if (closeBtn) closeBtn.addEventListener('click', closeModalAndClean);
+      if (closeReasonBtn) closeReasonBtn.addEventListener('click', () => { reasonModalEl.style.display = 'none'; });
+      
+      window.addEventListener('click', (e) => {
+        if (e.target === modal) closeModalAndClean();
+        if (e.target === reasonModalEl) reasonModalEl.style.display = 'none';
+      });
+      
+      const modalContent = document.querySelector('#goalModal .modal-content');
+      if (modalContent) modalContent.addEventListener('click', (e) => e.stopPropagation());
+      const reasonContent = document.querySelector('#reasonModal .modal-content');
+      if (reasonContent) reasonContent.addEventListener('click', (e) => e.stopPropagation());
+    }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      attachEvents();
+    });
+  })();
+</script>
+</body>
+</html>
